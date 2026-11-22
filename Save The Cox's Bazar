@@ -1,0 +1,52 @@
+using UnityEngine;
+
+[RequireComponent(typeof(MeshFilter))]
+public class OceanWaveController : MonoBehaviour
+{
+    [Header("Wave Dimensions")]
+    public float waveHeight = 0.8f;      // ঢেউয়ের উচ্চতা (কতটুকু ফুলে উঠবে)
+    public float waveFrequency = 0.35f;  // ঢেউয়ের ঘনত্ব / বিস্তার
+    public float waveSpeed = 2.2f;       // ঢেউয়ের গতিবেগ
+
+    [Header("Secondary Wave (Micro Details)")]
+    public float secondaryHeight = 0.25f; // ছোট ঢেউয়ের খাঁজ
+    public float secondaryFrequency = 0.8f;
+
+    private Mesh mesh;
+    private Vector3[] baseVertices;
+    private Vector3[] modifiedVertices;
+
+    void Start()
+    {
+        MeshFilter meshFilter = GetComponent<MeshFilter>();
+        mesh = meshFilter.mesh;
+        baseVertices = mesh.vertices;
+        modifiedVertices = new Vector3[baseVertices.Length];
+    }
+
+    void Update()
+    {
+        float time = Time.time * waveSpeed;
+
+        for (int i = 0; i < baseVertices.Length; i++)
+        {
+            Vector3 v = baseVertices[i];
+            
+            // বিশ্ব স্থানাঙ্কে রূপান্তর যাতে বড় স্কেলেও ঢেউ সুন্দরভাবে চলে
+            Vector3 worldPos = transform.TransformPoint(v);
+
+            // মূল সমুদ্রের ঢেউ (Sine + Perlin Noise)
+            float wave1 = Mathf.Sin((worldPos.x * waveFrequency) + (worldPos.z * waveFrequency * 0.7f) + time) * waveHeight;
+            
+            // সূক্ষ্ম সারফেস ঢেউ
+            float wave2 = Mathf.PerlinNoise((worldPos.x * secondaryFrequency) + time * 0.5f, (worldPos.z * secondaryFrequency) + time * 0.5f) * secondaryHeight;
+
+            // উচ্চতা প্রয়োগ
+            v.y = baseVertices[i].y + wave1 + wave2;
+            modifiedVertices[i] = v;
+        }
+
+        mesh.vertices = modifiedVertices;
+        mesh.RecalculateNormals(); // আলোর প্রতিফলন ও ঢেউয়ের ছায়া নিখুঁত রাখা
+    }
+}
