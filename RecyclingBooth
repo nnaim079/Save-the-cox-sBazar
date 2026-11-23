@@ -1,0 +1,107 @@
+using UnityEngine;
+
+public class RecyclingBooth : MonoBehaviour
+{
+    [Header("Settings")]
+    public float depositDistance = 6f; 
+    public KeyCode depositKey = KeyCode.Space;
+    public int scorePerMetal = 10;
+
+    [Header("Stats")]
+    public int totalDeposited = 0;
+    public int currentScore = 0;
+
+    private MetalDetector playerDetector;
+    private Transform playerTransform;
+    private float currentDist = 999f;
+
+    private void Start()
+    {
+        
+        playerDetector = Object.FindAnyObjectByType<MetalDetector>();
+
+        
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj != null)
+        {
+            playerTransform = playerObj.transform;
+        }
+        else if (playerDetector != null)
+        {
+            playerTransform = playerDetector.transform;
+        }
+    }
+
+    private void Update()
+    {
+        if (playerDetector == null)
+        {
+            playerDetector = Object.FindAnyObjectByType<MetalDetector>();
+            return;
+        }
+
+        if (playerTransform == null) return;
+
+        
+        currentDist = Vector3.Distance(transform.position, playerTransform.position);
+
+        
+        if (currentDist <= depositDistance)
+        {
+            if (Input.GetKeyDown(depositKey) || Input.GetKeyDown(KeyCode.Space))
+            {
+                if (playerDetector.totalCollected > 0)
+                {
+                    int metals = playerDetector.totalCollected;
+                    totalDeposited += metals;
+                    currentScore += metals * scorePerMetal;
+
+                    
+                    playerDetector.totalCollected = 0;
+
+                    Debug.Log($"<color=green>সফলভাবে জমা হয়েছে! মোট জমা: {totalDeposited}</color>");
+                }
+            }
+        }
+    }
+
+    private void OnGUI()
+    {
+        GUIStyle style = new GUIStyle();
+        style.fontSize = 24;
+        style.fontStyle = FontStyle.Bold;
+
+        
+        if (currentDist <= depositDistance)
+        {
+            if (playerDetector != null && playerDetector.totalCollected > 0)
+            {
+                style.normal.textColor = Color.cyan;
+                GUI.Label(new Rect(Screen.width / 2 - 180, Screen.height - 150, 450, 40), 
+                    $"Press [Space] to Deposit {playerDetector.totalCollected} Metals", style);
+            }
+            else
+            {
+                style.normal.textColor = Color.yellow;
+                GUI.Label(new Rect(Screen.width / 2 - 150, Screen.height - 150, 400, 40), 
+                    "No metal to deposit in bag!", style);
+            }
+        }
+
+        
+        GUIStyle scoreStyle = new GUIStyle();
+        scoreStyle.fontSize = 20;
+        scoreStyle.fontStyle = FontStyle.Bold;
+        scoreStyle.normal.textColor = Color.yellow;
+
+        GUI.Label(new Rect(Screen.width - 190, 20, 170, 30), $"Deposited: {totalDeposited}", scoreStyle);
+        GUI.Label(new Rect(Screen.width - 190, 50, 170, 30), $"Total Score: {currentScore}", scoreStyle);
+    }
+
+    
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, depositDistance);
+    }
+}
